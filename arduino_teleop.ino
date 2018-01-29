@@ -20,11 +20,20 @@ private:
     Sabertooth *controller_ptr_;
 };
 
-constexpr long SABERTOOTH_BAUD_RATE = 9600;
-constexpr byte SABERTOOTH_ADDRESS = 128;
+constexpr byte operator""_b(const unsigned long long literal) {
+    return static_cast<byte>(literal);
+}
+
+constexpr auto BAUD_RATE = 9600l;
+constexpr auto ADDRESS = 128_b;
+constexpr auto RAMPING_VALUE = 14_b;
+constexpr auto TIMEOUT_VALUE_MS = 500;
+
+constexpr auto LEFT_MOTOR = 1_b;
+constexpr auto RIGHT_MOTOR = 2_b;
 
 auto serial = AltSoftSerial{ };
-auto controller = Sabertooth{ SABERTOOTH_ADDRESS, serial };
+auto controller = Sabertooth{ ADDRESS, serial };
 
 auto handler = CallbackHandler{ controller };
 ros::NodeHandle handle;
@@ -36,10 +45,10 @@ void setup() {
     handle.initNode();
     handle.subscribe(subscriber);
 
-    serial.begin(SABERTOOTH_BAUD_RATE);
+    serial.begin(BAUD_RATE);
     controller.autobaud();
-    controller.setRamping(27);
-    controller.setTimeout(500);
+    controller.setRamping(RAMPING_VALUE);
+    controller.setTimeout(TIMEOUT_VALUE_MS);
 }
 
 void loop() {
@@ -51,11 +60,11 @@ CallbackHandler::CallbackHandler(Sabertooth &controller)
 { }
 
 void CallbackHandler::callback(const std_msgs::UInt16 &message) {
-    const auto right = sign_extend(message.data >> 8); // get bits in [8, 16)
-    const auto left = sign_extend(message.data & 0xff); // get bits in [0, 8)
+    const auto left = sign_extend(message.data >> 8); // get bits in [8, 16)
+    const auto right = sign_extend(message.data & 0xff); // get bits in [0, 8)
 
-    controller_ptr_->motor(2, -left);
-    controller_ptr_->motor(1, -right);
+    controller_ptr_->motor(LEFT_MOTOR, left);
+    controller_ptr_->motor(RIGHT_MOTOR, right);
 }
 
 template <unsigned long long N>
