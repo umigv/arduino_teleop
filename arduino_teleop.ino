@@ -1,6 +1,5 @@
 #include <ros.h>
 #include <std_msgs/UInt16.h>
-#include <AltSoftSerial.h>
 #include <Sabertooth.h>
 
 class CallbackHandler;
@@ -24,16 +23,15 @@ constexpr byte operator""_b(const unsigned long long literal) {
     return static_cast<byte>(literal);
 }
 
-constexpr auto BAUD_RATE = 9600l;
+constexpr auto BAUD_RATE = 38400l;
 constexpr auto ADDRESS = 128_b;
-constexpr auto RAMPING_VALUE = 14_b;
+constexpr auto RAMPING_VALUE = 44_b; // ~0.5s ramping
 constexpr auto TIMEOUT_VALUE_MS = 500;
 
 constexpr auto LEFT_MOTOR = 1_b;
 constexpr auto RIGHT_MOTOR = 2_b;
 
-auto serial = AltSoftSerial{ };
-auto controller = Sabertooth{ ADDRESS, serial };
+auto controller = Sabertooth{ ADDRESS, Serial1 };
 
 auto handler = CallbackHandler{ controller };
 ros::NodeHandle handle;
@@ -45,7 +43,7 @@ void setup() {
     handle.initNode();
     handle.subscribe(subscriber);
 
-    serial.begin(BAUD_RATE);
+    Serial1.begin(BAUD_RATE);
     controller.autobaud();
     controller.setRamping(RAMPING_VALUE);
     controller.setTimeout(TIMEOUT_VALUE_MS);
