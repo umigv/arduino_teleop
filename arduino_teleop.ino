@@ -1,77 +1,46 @@
+#include "RoboClaw.h"
 #include <ros.h>
-#include <std_msgs/UInt16.h>
-#include <Sabertooth.h>
+#include <geometry_msgs/Twist.h>
+#include <math.h>
 
-class CallbackHandler;
+// BEGIN CONSTS
+//TODO: MAKE SURE THIS ADDRESS MATCHES THAT OF THE CONTROLLER
+const uint8_t ROBOCLAW_ADDRESS = 0x80;
+const long ROBOCLAW_BAUD_RATE = 38400;
+const long TIMEOUT_VALUE_MS = 10000;
+const float PULSES_PER_ROTATION = 360; // For the encoders
+const float ROBOT_RADIUS = 0.3175; // Robot thiccness/2 in METERS
+const float WHEEL_RADIUS = 0.1651; // in METERS
+const float velToPPS = (360)*(1/(2*M_PI))*(1/WHEEL_RADIUS);
+// END CONSTS
 
-using SubscriberT = ros::Subscriber<std_msgs::UInt16, CallbackHandler>;
+// Use uno's Serial1 (same as sabertooth)
+RoboClaw roboclaw(&Serial1,TIMEOUT_VALUE_MS);
 
-class CallbackHandler {
-public:
-    CallbackHandler(Sabertooth &controller);
-
-    void callback(const std_msgs::UInt16 &message);
-
-private:
-    template <unsigned long long N = 8>
-    int sign_extend(int to_extend);
-
-    Sabertooth *controller_ptr_;
-};
-
-constexpr byte operator""_b(const unsigned long long literal) {
-    return static_cast<byte>(literal);
-}
-
-constexpr auto BAUD_RATE = 38400l;
-constexpr auto ADDRESS = 128_b;
-constexpr auto RAMPING_VALUE = 44_b; // ~0.5s ramping
-constexpr auto TIMEOUT_VALUE_MS = 500;
-
-constexpr auto LEFT_MOTOR = 1_b;
-constexpr auto RIGHT_MOTOR = 2_b;
-
-auto controller = Sabertooth{ ADDRESS, Serial1 };
-
-auto handler = CallbackHandler{ controller };
+void cmdVelCallback(const geometry_msgs::Twist&);
 ros::NodeHandle handle;
-auto subscriber =
-    SubscriberT{ "sabertooth", &CallbackHandler::callback, &handler };
+ros::Subscriber<geometry_msgs::Twist> subscriber("cmd_vel", &cmdVelCallback);
 
+void cmdVelCallback(const geometry_msgs::Twist &twist) {
+  // calculations are done with the following assumptions:
+  // lin. vel (linear) is in m/s
+  // ang. vel (spin) is in rad/s
+  // ROBOT_RADIUS is in meters and is 1/2 the distance between the 2 wheels
+  float linear = twist.linear.x;
+  float spin = twist.angular.z;
+  float vLeft = linear - spin*ROBOT_RADIUS/2;
+  float vRight = linear + spin*ROBOT_RADIUS/2;
+  roboclaw.SpeedM1(ROBOCLAW_ADDRESS, vLeft*velToPPS);
+  roboclaw.SpeedM2(ROBOCLAW_ADDRESS, vRight*velToPPS);
+}
 
 void setup() {
-    handle.initNode();
-    handle.subscribe(subscriber);
-
-    Serial1.begin(BAUD_RATE);
-    controller.autobaud();
-    controller.setRamping(RAMPING_VALUE);
-    controller.setTimeout(TIMEOUT_VALUE_MS);
+  //Communicate at 38400bps
+  roboclaw.begin(ROBOCLAW_BAUD_RATE);
+  handle.initNode();
+  handle.subscribe(subscriber);
 }
 
-void loop() {
-    handle.spinOnce();
-}
-
-CallbackHandler::CallbackHandler(Sabertooth &controller)
-    : controller_ptr_{ &controller }
-{ }
-
-void CallbackHandler::callback(const std_msgs::UInt16 &message) {
-    const auto left = sign_extend(message.data >> 8); // get bits in [8, 16)
-    const auto right = sign_extend(message.data & 0xff); // get bits in [0, 8)
-
-    controller_ptr_->motor(LEFT_MOTOR, left);
-    controller_ptr_->motor(RIGHT_MOTOR, right);
-}
-
-template <unsigned long long N>
-int CallbackHandler::sign_extend(const int to_extend) {
-    struct Extender {
-        int data : N;
-    };
-
-    const auto extended = Extender{ to_extend };
-
-    return extended.data;
+void loop(){
+  handle.spinOnce();
 }
