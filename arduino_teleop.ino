@@ -5,7 +5,8 @@
 
 // BEGIN CONSTS
 //TODO: MAKE SURE THIS ADDRESS MATCHES THAT OF THE CONTROLLER
-const uint8_t ROBOCLAW_ADDRESS = 0x80;
+const uint8_t ROBOCLAW0 = 0x80;
+const uint8_t ROBOCLAW1 = 0x81;
 const long ROBOCLAW_BAUD_RATE = 38400;
 const long TIMEOUT_VALUE_MS = 10000;
 const float PULSES_PER_ROTATION = 360; // For the encoders
@@ -30,8 +31,10 @@ void cmdVelCallback(const geometry_msgs::Twist &twist) {
   float spin = twist.angular.z;
   float vLeft = linear - spin*ROBOT_RADIUS/2;
   float vRight = linear + spin*ROBOT_RADIUS/2;
-  roboclaw.SpeedM1(ROBOCLAW_ADDRESS, vLeft*velToPPS);
-  roboclaw.SpeedM2(ROBOCLAW_ADDRESS, vRight*velToPPS);
+  roboclaw.SpeedM1(ROBOCLAW0, vLeft*velToPPS);
+  roboclaw.SpeedM2(ROBOCLAW0, vLeft*velToPPS);
+  roboclaw.SpeedM1(ROBOCLAW1, vRight*velToPPS);
+  roboclaw.SpeedM2(ROBOCLAW1, vRight*velToPPS);
 }
 
 void setup() {
