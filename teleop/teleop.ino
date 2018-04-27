@@ -7,12 +7,12 @@
 //TODO: MAKE SURE THIS ADDRESS MATCHES THAT OF THE CONTROLLER
 const uint8_t ROBOCLAW0 = 0x80;
 const uint8_t ROBOCLAW1 = 0x81;
-const long ROBOCLAW_BAUD_RATE = 38400;
+const long ROBOCLAW_BAUD_RATE = 115200;
 const long TIMEOUT_VALUE_MS = 10000;
-const float PULSES_PER_ROTATION = 360; // For the encoders
+const float PPR = 1440; // encoder pulses per rotation
 const float ROBOT_RADIUS = 0.3175; // Robot thiccness/2 in METERS
 const float WHEEL_RADIUS = 0.1651; // in METERS
-const float velToPPS = (360)*(1/(2*M_PI))*(1/WHEEL_RADIUS);
+const float velToPPS = PPR*(1/(2*M_PI))*(1/WHEEL_RADIUS);
 // END CONSTS
 
 // Use uno's Serial1 (same as sabertooth)
