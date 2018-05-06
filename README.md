@@ -1,6 +1,6 @@
 ## Synopsis
 
-The `arduino_teleop` sketch interfaces with two Roboclaw controllers and a `rosserial` bridge over USB.  It subscribes to the cmd_vel topic which contains the robot's target twist and then converts these msgs to left/right wheel spin speeds.  The roboclaw's PID controllers obtain these desired speeds with the input of encoders.
+The `teleop` sketch interfaces with two Roboclaw controllers and a `rosserial` bridge over USB.  It subscribes to the cmd_vel topic which contains the robot's target twist and then converts these msgs to left/right wheel spin speeds.  The roboclaw's PID controllers obtain these desired speeds with the input of encoders.
 
 `tune_pid` is used to tune (using the arduino serial moniter) the pids of the roboclaws.  To tune PID, the phidgets board will need to actually be collecting encoder data(even though you don't actually use this data) otherwise the encoders will not be powered and the roboclaws will not get an encoder signal.
 
