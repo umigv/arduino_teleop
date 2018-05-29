@@ -9,13 +9,14 @@ const uint8_t ROBOCLAW0 = 0x80;
 const uint8_t ROBOCLAW1 = 0x81;
 const bool REVERSE0 = false;
 const bool REVERSE1 = true;
-const long ROBOCLAW_BAUD_RATE = 115200;
+const long ROBOCLAW_BAUD_RATE = 38400;
 const long ROBOCLAW_TIMEOUT = 10000; 
 const long CONTROL_TIMEOUT = 1000; //ms to wait  before killing motors
-const float PPR = 1440; // encoder pulses per rotation
-const float ROBOT_RADIUS = 0.3175; // Robot thiccness/2 in METERS
-const float WHEEL_RADIUS = 0.1651; // in METERS
-const float velToPPS = PPR*(1/(2*M_PI))*(1/WHEEL_RADIUS);
+const float PPRREV = 1440; // encoder pulses per rotation
+const float HALFTRACK = 0.3048; // Robot thiccness/2 in METERS
+const float DIAMETER = 0.3302; // in METERS
+const float REVPM = 1.0 / (M_PI * DIAMETER); // revolutions per meter
+const float PPM = PPREV * REVPM; // encoder pulses per meter
 // END CONSTS
 
 // Use uno's Serial1 (same as sabertooth)
@@ -32,15 +33,21 @@ void cmdVelCallback(const geometry_msgs::Twist &twist) {
   // ang. vel (spin) is in rad/s
   // ROBOT_RADIUS is in meters and is 1/2 the distance between the 2 wheels
   lastData = millis();
-  float linear = twist.linear.x;
-  float spin = twist.angular.z;
-  float vLeft = linear - spin*ROBOT_RADIUS/2;
-  float vRight = linear + spin*ROBOT_RADIUS/2;
+  const float linear = twist.linear.x;
+  const float spin = twist.angular.z;
+  // t is track
+  // [ 1/2  1/2 ][vl] = [vx]
+  // [-1/2t 1/2t][wz] = [wz]
+  // by inversion...
+  // [1 -t][vx] = [vl]
+  // [1  t][wz] = [vr]
+  const float vLeft = linear - spin * TRACK;
+  const float vRight = linear + spin * TRACK;
   vLeft = REVERSE0 ? -vLeft : vLeft;
   vRight = REVERSE1 ? -vRight : vRight;
   
-  roboclaw.SpeedM1M2(ROBOCLAW0, vLeft*velToPPS, vLeft*velToPPS);
-  roboclaw.SpeedM1M2(ROBOCLAW1, vRight*velToPPS, vRight*velToPPS);
+  roboclaw.SpeedM1M2(ROBOCLAW0, vLeft * PPM, vLeft * PPM);
+  roboclaw.SpeedM1M2(ROBOCLAW1, vRight * PPM, vRight * PPM);
 }
 
 void setup() {
