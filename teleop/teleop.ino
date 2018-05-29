@@ -9,13 +9,14 @@ const uint8_t ROBOCLAW0 = 0x80;
 const uint8_t ROBOCLAW1 = 0x81;
 const bool REVERSE0 = false;
 const bool REVERSE1 = true;
-const long ROBOCLAW_BAUD_RATE = 115200;
+const long ROBOCLAW_BAUD_RATE = 38400;
 const long ROBOCLAW_TIMEOUT = 10000; 
 const long CONTROL_TIMEOUT = 1000; //ms to wait  before killing motors
-const float PPR = 1440; // encoder pulses per rotation
-const float TRACK = 0.635; // Robot thiccness in METERS
-const float WHEEL_RADIUS = 0.1651; // in METERS
-const float velToPPS = PPR*(1/(2*M_PI))*(1/WHEEL_RADIUS);
+const float PPRREV = 1440; // encoder pulses per rotation
+const float HALFTRACK = 0.3048; // Robot thiccness/2 in METERS
+const float DIAMETER = 0.3302; // in METERS
+const float REVPM = 1.0 / (M_PI * DIAMETER); // revolutions per meter
+const float PPM = PPREV * REVPM; // encoder pulses per meter
 // END CONSTS
 
 // Use uno's Serial1 (same as sabertooth)
@@ -45,8 +46,8 @@ void cmdVelCallback(const geometry_msgs::Twist &twist) {
   vLeft = REVERSE0 ? -vLeft : vLeft;
   vRight = REVERSE1 ? -vRight : vRight;
   
-  roboclaw.SpeedM1M2(ROBOCLAW0, vLeft*velToPPS, vLeft*velToPPS);
-  roboclaw.SpeedM1M2(ROBOCLAW1, vRight*velToPPS, vRight*velToPPS);
+  roboclaw.SpeedM1M2(ROBOCLAW0, vLeft * PPM, vLeft * PPM);
+  roboclaw.SpeedM1M2(ROBOCLAW1, vRight * PPM, vRight * PPM);
 }
 
 void setup() {
